@@ -49,6 +49,7 @@ Me:  "Found it! You have 47GB of node_modules. Want me to clean them up?"
 | 📱 **Telegram-First** | Control me from anywhere, no port forwarding needed |
 | 🖥️ **Cross-Platform** | macOS, Windows, Linux - I go where you go |
 | 🛡️ **Guardian AI** | Built-in safety checks before running dangerous commands |
+| 🧠 **Long-term Memory** | I remember facts about you across sessions |
 
 ---
 
@@ -120,6 +121,52 @@ Switch anytime in settings!
 
 ---
 
+## 🧠 Memory System
+
+I can remember things about you across conversations!
+
+```
+You: "Remember that I prefer dark mode and my project is called PocketClaw"
+Me:  "Got it! I'll remember your preference for dark mode and that you're
+      working on PocketClaw."
+
+[Next day...]
+
+You: "What project am I working on?"
+Me:  "You're working on PocketClaw!"
+```
+
+### Default: File-based Memory
+Stores memories as readable markdown in `~/.pocketclaw/memory/`:
+- `MEMORY.md` — Long-term facts about you
+- `sessions/` — Conversation history
+
+### Optional: Mem0 (Semantic Memory)
+For smarter memory with vector search and automatic fact extraction:
+
+```bash
+# Install with memory extras
+pip install pocketpaw[memory]
+
+# Or install mem0 separately
+pip install mem0ai
+```
+
+Then configure in `.env`:
+```bash
+MEMORY_BACKEND=mem0
+MEMORY_USE_INFERENCE=true  # LLM extracts facts automatically
+```
+
+**Mem0 features:**
+- Semantic search (find related memories, not just keyword matches)
+- Automatic fact extraction from conversations
+- Memory evolution (updates facts instead of duplicating)
+
+> **Note:** Mem0 requires embeddings. By default it uses OpenAI embeddings (needs `OPENAI_API_KEY`). For fully local, configure a local embedding model.
+
+---
+
 ## ⚙️ Configuration
 
 I store my config in `~/.pocketclaw/config.json`:
@@ -130,15 +177,21 @@ I store my config in `~/.pocketclaw/config.json`:
   "allowed_user_id": 123456789,
   "agent_backend": "open_interpreter",
   "llm_provider": "ollama",
-  "ollama_model": "llama3.2"
+  "ollama_model": "llama3.2",
+  "memory_backend": "file"
 }
 ```
 
 Or use environment variables:
 
 ```bash
+# LLM Configuration
 export POCKETCLAW_ANTHROPIC_API_KEY="sk-ant-..."
 export POCKETCLAW_AGENT_BACKEND="claude_code"
+
+# Memory Configuration
+export MEMORY_BACKEND="mem0"           # "file" (default) or "mem0"
+export MEMORY_USE_INFERENCE="true"     # Enable LLM fact extraction
 ```
 
 ---
