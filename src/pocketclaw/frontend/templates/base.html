@@ -95,6 +95,18 @@
                 Chat
             </button>
             <button
+                class="px-4 md:px-6 py-1.5 rounded-[7px] text-[13px] font-medium transition-all flex items-center gap-1.5"
+                :class="view === 'inbox' ? 'bg-[#636366]/80 text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-white'"
+                @click="view = 'inbox'; loadRecentSessions()"
+            >
+                Inbox
+                <span
+                    x-show="recentSessions.filter(s => s.channel !== 'websocket').length > 0"
+                    class="bg-accent text-white text-[10px] px-1.5 py-0 rounded-full leading-tight"
+                    x-text="recentSessions.filter(s => s.channel !== 'websocket').length"
+                ></span>
+            </button>
+            <button
                 class="px-4 md:px-6 py-1.5 rounded-[7px] text-[13px] font-medium transition-all"
                 :class="view === 'activity' ? 'bg-[#636366]/80 text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-white'"
                 @click="view = 'activity'"
@@ -109,7 +121,7 @@
                 Terminal
             </button>
             <button
-                class="px-4 md:px-6 py-1.5 rounded-[7px] text-[13px] font-medium transition-all flex items-center gap-1.5"
+                class="px-4 md:px-6 py-1.5 rounded-[7px] text-[13px] font-medium transition-all flex items-center gap-1.5 hidden sm:flex"
                 :class="view === 'missions' ? 'bg-[#636366]/80 text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-white'"
                 @click="view = 'missions'; loadMCData()"
             >
@@ -156,6 +168,7 @@
       </header>
 
       {% include "components/chat.html" %}
+      {% include "components/inbox.html" %}
       {% include "components/activity.html" %}
       {% include "components/terminal.html" %}
       {% include "components/missions.html" %}
@@ -167,9 +180,11 @@
     <div class="toast-container" x-ref="toasts"></div>
 
     <!-- Scripts (cache-busted via ?v= hash) -->
+    <script src="/static/js/state.js?v={{ v }}"></script>
     <script src="/static/js/websocket.js?v={{ v }}"></script>
     <script src="/static/js/tools.js?v={{ v }}"></script>
     <!-- Feature modules (loaded before app.js) -->
+    <script src="/static/js/features/sessions.js?v={{ v }}"></script>
     <script src="/static/js/features/chat.js?v={{ v }}"></script>
     <script src="/static/js/features/file-browser.js?v={{ v }}"></script>
     <script src="/static/js/features/reminders.js?v={{ v }}"></script>
