@@ -26,9 +26,9 @@ esac
 
 # ── Download helper ─────────────────────────────────────────────────────
 if command -v curl >/dev/null 2>&1; then
-    DOWNLOAD="curl -fsSL"
+    DOWNLOAD="curl -fsSL -H Cache-Control:no-cache"
 elif command -v wget >/dev/null 2>&1; then
-    DOWNLOAD="wget -qO-"
+    DOWNLOAD="wget -qO- --no-cache"
 else
     printf '\033[31mError:\033[0m Neither curl nor wget found.\n'
     exit 1
