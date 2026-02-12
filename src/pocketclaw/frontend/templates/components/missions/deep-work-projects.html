@@ -175,14 +175,58 @@
                         Timeline
                     </button>
                 </div>
-                <span class="text-[10px] text-white/50">
-                    <span x-text="missionControl.executionLevels.length"></span> phases
-                </span>
+                <div class="flex items-center gap-3">
+                    <span class="text-[10px] text-white/50">
+                        <span x-text="missionControl.executionLevels.length"></span> phases
+                    </span>
+                    <!-- Running task count -->
+                    <span
+                        x-show="getRunningTaskCount() > 0"
+                        class="flex items-center gap-1 text-[10px] text-green-400 font-medium"
+                    >
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                        <span x-text="getRunningTaskCount()"></span> running
+                    </span>
+                </div>
+            </div>
+
+            <!-- Planning progress indicator -->
+            <div
+                x-show="missionControl.selectedProject?.status === 'planning' && missionControl.projectStarting"
+                class="px-6 py-8 flex flex-col items-center gap-4"
+            >
+                <div class="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center">
+                    <i data-lucide="loader" class="w-6 h-6 text-accent animate-spin"></i>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm font-medium text-white" x-text="getPlanningPhaseInfo().label + '...'"></p>
+                    <p class="text-xs text-white/50 mt-1" x-text="missionControl.planningMessage"></p>
+                </div>
+                <!-- Phase progress steps -->
+                <div class="flex items-center gap-2 mt-2">
+                    <template x-for="(phase, idx) in ['research', 'prd', 'tasks', 'team']" :key="phase">
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-2 h-2 rounded-full transition-all"
+                                :class="{
+                                    'bg-accent': getPlanningPhaseInfo().step > idx + 1,
+                                    'bg-accent animate-pulse': getPlanningPhaseInfo().step === idx + 1,
+                                    'bg-white/15': getPlanningPhaseInfo().step < idx + 1
+                                }"
+                            ></div>
+                            <span
+                                x-show="idx < 3"
+                                class="w-6 h-px"
+                                :class="getPlanningPhaseInfo().step > idx + 1 ? 'bg-accent/40' : 'bg-white/10'"
+                            ></span>
+                        </div>
+                    </template>
+                </div>
             </div>
 
             <!-- ====== LIST VIEW ====== -->
             <div x-show="missionControl.taskViewMode === 'list'" class="flex-1 overflow-y-auto">
-                <div x-show="missionControl.projectTasks.length === 0" class="flex flex-col items-center justify-center h-32 text-white/30">
+                <div x-show="missionControl.projectTasks.length === 0 && !missionControl.projectStarting" class="flex flex-col items-center justify-center h-32 text-white/30">
                     <i data-lucide="list-checks" class="w-8 h-8 mb-2 opacity-30"></i>
                     <p class="text-xs">No tasks in this project</p>
                 </div>
@@ -247,10 +291,12 @@
                                                 }"
                                                 x-text="task.title"
                                             ></span>
-                                            <!-- Running indicator -->
+                                            <!-- Running indicator with activity button -->
                                             <span
                                                 x-show="isMCTaskRunning(task.id)"
-                                                class="shrink-0 flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium bg-green-500/20 text-green-400 rounded"
+                                                class="shrink-0 flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium bg-green-500/20 text-green-400 rounded cursor-pointer hover:bg-green-500/30 transition-all"
+                                                @click.stop="openAgentActivitySheet(task.id)"
+                                                title="View live output"
                                             >
                                                 <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                                                 Running
@@ -273,6 +319,16 @@
                                                 <i data-lucide="arrow-right-circle" class="w-2.5 h-2.5"></i>
                                                 <span x-text="task.blocks.length"></span>
                                             </span>
+                                        </div>
+                                        <!-- Agent activity description (shown while running) -->
+                                        <div
+                                            x-show="task.active_description && isMCTaskRunning(task.id)"
+                                            class="pl-6 mt-0.5"
+                                        >
+                                            <span
+                                                class="text-[10px] text-green-400/70 truncate block max-w-md"
+                                                x-text="task.active_description"
+                                            ></span>
                                         </div>
                                     </div>
 
@@ -460,11 +516,19 @@
                         <!-- Timeline bars -->
                         <template x-for="task in group.tasks" :key="'tl-task-' + task.id">
                             <div
-                                class="flex items-center gap-3 px-4 py-1.5 hover:bg-white/[0.02] transition-all"
+                                class="flex items-center gap-3 px-4 py-1.5 hover:bg-white/[0.02] transition-all cursor-pointer"
                                 :class="{ 'opacity-40': task.status === 'skipped' }"
+                                @click="isMCTaskRunning(task.id) ? openAgentActivitySheet(task.id) : toggleTaskExpand(task.id)"
                             >
                                 <!-- Task title (truncated) -->
-                                <div class="w-40 shrink-0 truncate text-xs" :class="task.status === 'done' || task.status === 'skipped' ? 'text-white/45' : 'text-white/70'" x-text="task.title"></div>
+                                <div class="w-40 shrink-0 min-w-0">
+                                    <div class="truncate text-xs" :class="task.status === 'done' || task.status === 'skipped' ? 'text-white/45' : 'text-white/70'" x-text="task.title"></div>
+                                    <div
+                                        x-show="task.active_description && isMCTaskRunning(task.id)"
+                                        class="truncate text-[9px] text-green-400/60 mt-0.5"
+                                        x-text="task.active_description"
+                                    ></div>
+                                </div>
 
                                 <!-- Bar area -->
                                 <div class="flex-1 flex items-center">

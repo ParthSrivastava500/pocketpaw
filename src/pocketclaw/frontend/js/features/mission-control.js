@@ -406,21 +406,11 @@ window.PocketPaw.MissionControl = {
                         const data = await res.json();
                         const serverTask = data.task;
 
-                        // Update in main tasks list
-                        const task = this.missionControl.tasks.find(t => t.id === taskId);
-                        if (task) {
-                            task.status = serverTask.status;
-                            task.completed_at = serverTask.completed_at;
-                            task.updated_at = serverTask.updated_at;
-                        }
-
-                        // Also update in projectTasks if present
-                        const pTask = this.missionControl.projectTasks.find(t => t.id === taskId);
-                        if (pTask) {
-                            pTask.status = serverTask.status;
-                            pTask.completed_at = serverTask.completed_at;
-                            pTask.updated_at = serverTask.updated_at;
-                        }
+                        this._updateTaskInAllLists(taskId, {
+                            status: serverTask.status,
+                            completed_at: serverTask.completed_at,
+                            updated_at: serverTask.updated_at,
+                        });
 
                         // Refresh project progress if viewing a project
                         if (this.missionControl.selectedProject) {
@@ -464,15 +454,29 @@ window.PocketPaw.MissionControl = {
                     });
 
                     if (res.ok) {
-                        // Update local state
-                        const task = this.missionControl.tasks.find(t => t.id === taskId);
-                        if (task) task.priority = priority;
-                        if (this.missionControl.selectedTask?.id === taskId) {
-                            this.missionControl.selectedTask.priority = priority;
-                        }
+                        this._updateTaskInAllLists(taskId, { priority });
                     }
                 } catch (e) {
                     console.error('Failed to update task priority:', e);
+                }
+            },
+
+            // ==================== Task Update Helper ====================
+
+            /**
+             * Atomically update a task across all local lists: tasks, projectTasks,
+             * and selectedTask. Prevents sync drift from manual dual-updates.
+             *
+             * @param {string} taskId - The task ID to update
+             * @param {Object} updates - Key/value pairs to set on the task object
+             */
+            _updateTaskInAllLists(taskId, updates) {
+                for (const list of [this.missionControl.tasks, this.missionControl.projectTasks]) {
+                    const t = list.find(x => x.id === taskId);
+                    if (t) Object.assign(t, updates);
+                }
+                if (this.missionControl.selectedTask?.id === taskId) {
+                    Object.assign(this.missionControl.selectedTask, updates);
                 }
             },
 
@@ -527,16 +531,11 @@ window.PocketPaw.MissionControl = {
 
                     if (res.ok) {
                         const data = await res.json();
-                        // Update local task state
-                        const task = this.missionControl.tasks.find(t => t.id === taskId);
-                        if (task && data.task) {
-                            task.assignee_ids = data.task.assignee_ids;
-                            task.status = data.task.status;
-                        }
-                        // Update selected task if it's the same
-                        if (this.missionControl.selectedTask?.id === taskId && data.task) {
-                            this.missionControl.selectedTask.assignee_ids = data.task.assignee_ids;
-                            this.missionControl.selectedTask.status = data.task.status;
+                        if (data.task) {
+                            this._updateTaskInAllLists(taskId, {
+                                assignee_ids: data.task.assignee_ids,
+                                status: data.task.status,
+                            });
                         }
                         this.showToast('Agent assigned', 'success');
                         this.$nextTick(() => { if (window.refreshIcons) window.refreshIcons(); });
@@ -571,15 +570,11 @@ window.PocketPaw.MissionControl = {
 
                     if (res.ok) {
                         const data = await res.json();
-                        // Update local task state
                         if (data.task) {
-                            task.assignee_ids = data.task.assignee_ids;
-                            task.status = data.task.status;
-                        }
-                        // Update selected task if it's the same
-                        if (this.missionControl.selectedTask?.id === taskId && data.task) {
-                            this.missionControl.selectedTask.assignee_ids = data.task.assignee_ids;
-                            this.missionControl.selectedTask.status = data.task.status;
+                            this._updateTaskInAllLists(taskId, {
+                                assignee_ids: data.task.assignee_ids,
+                                status: data.task.status,
+                            });
                         }
                         this.showToast('Agent removed', 'info');
                         this.$nextTick(() => { if (window.refreshIcons) window.refreshIcons(); });
@@ -659,16 +654,16 @@ window.PocketPaw.MissionControl = {
                             agentName: agent.name,
                             taskTitle: task.title,
                             output: [],
-                            startedAt: new Date()
+                            startedAt: new Date(),
+                            lastAction: 'Starting...'
                         };
 
-                        // Update task status locally
-                        task.status = 'in_progress';
-                        task.started_at = new Date().toISOString();
-                        if (this.missionControl.selectedTask?.id === taskId) {
-                            this.missionControl.selectedTask.status = 'in_progress';
-                            this.missionControl.selectedTask.started_at = task.started_at;
-                        }
+                        // Update task status across all lists
+                        this._updateTaskInAllLists(taskId, {
+                            status: 'in_progress',
+                            started_at: new Date().toISOString(),
+                            active_description: `${agent.name} is working...`,
+                        });
 
                         // Update agent status locally
                         agent.status = 'active';
@@ -720,14 +715,11 @@ window.PocketPaw.MissionControl = {
                         // Remove from running tasks
                         delete this.missionControl.runningTasks[taskId];
 
-                        // Update task status
-                        const task = this.missionControl.tasks.find(t => t.id === taskId);
-                        if (task) {
-                            task.status = 'blocked';
-                        }
-                        if (this.missionControl.selectedTask?.id === taskId) {
-                            this.missionControl.selectedTask.status = 'blocked';
-                        }
+                        // Update task status across all lists
+                        this._updateTaskInAllLists(taskId, {
+                            status: 'blocked',
+                            active_description: null,
+                        });
 
                         // Update stats
                         this.missionControl.stats.active_tasks = Math.max(0, this.missionControl.stats.active_tasks - 1);
@@ -787,14 +779,15 @@ window.PocketPaw.MissionControl = {
                         agentName: agentName,
                         taskTitle: taskTitle,
                         output: [],
-                        startedAt: new Date()
+                        startedAt: new Date(),
+                        lastAction: 'Starting...'
                     };
 
-                    // Update task status in local state
-                    const task = this.missionControl.tasks.find(t => t.id === taskId);
-                    if (task) {
-                        task.status = 'in_progress';
-                    }
+                    // Update task status across all lists
+                    this._updateTaskInAllLists(taskId, {
+                        status: 'in_progress',
+                        active_description: `${agentName} is working...`,
+                    });
 
                     // Update agent status
                     const agent = this.missionControl.agents.find(a => a.id === agentId);
@@ -818,11 +811,27 @@ window.PocketPaw.MissionControl = {
                     const outputType = eventData.output_type;
 
                     // Add to running task output
-                    if (this.missionControl.runningTasks[taskId]) {
-                        this.missionControl.runningTasks[taskId].output.push({
+                    const runningTask = this.missionControl.runningTasks[taskId];
+                    if (runningTask) {
+                        runningTask.output.push({
                             content,
                             type: outputType,
                             timestamp: new Date()
+                        });
+
+                        // Track latest action for inline display
+                        if (outputType === 'tool_use') {
+                            runningTask.lastAction = content;
+                        } else if (outputType === 'message' && content.trim()) {
+                            const snippet = content.trim().substring(0, 80);
+                            runningTask.lastAction = snippet;
+                        }
+                    }
+
+                    // Update active_description across all lists for inline visibility
+                    if (runningTask) {
+                        this._updateTaskInAllLists(taskId, {
+                            active_description: runningTask.lastAction || 'Working...',
                         });
                     }
 
@@ -861,23 +870,18 @@ window.PocketPaw.MissionControl = {
                     // Remove from running tasks
                     delete this.missionControl.runningTasks[taskId];
 
-                    // Update task status in main tasks list
-                    const task = this.missionControl.tasks.find(t => t.id === taskId);
-                    if (task) {
-                        task.status = status === 'completed' ? 'done' : 'blocked';
-                        if (status === 'completed') {
-                            task.completed_at = new Date().toISOString();
-                        }
+                    // Update task status across all lists
+                    const completedUpdates = {
+                        status: status === 'completed' ? 'done' : 'blocked',
+                        active_description: null,
+                    };
+                    if (status === 'completed') {
+                        completedUpdates.completed_at = new Date().toISOString();
                     }
+                    this._updateTaskInAllLists(taskId, completedUpdates);
 
-                    // Also update in projectTasks if present
-                    const pTask = this.missionControl.projectTasks.find(t => t.id === taskId);
-                    if (pTask) {
-                        pTask.status = status === 'completed' ? 'done' : 'blocked';
-                        if (status === 'completed') {
-                            pTask.completed_at = new Date().toISOString();
-                        }
-                    }
+                    // For toast message
+                    const task = this.missionControl.tasks.find(t => t.id === taskId);
 
                     // Update agent status
                     const agentId = eventData.agent_id;
@@ -1179,19 +1183,31 @@ window.PocketPaw.MissionControl = {
                         this.missionControl.projects.unshift(project);
                         this.missionControl.projectInput = '';
                         this.missionControl.showStartProject = false;
+
+                        // Set planningProjectId IMMEDIATELY so WebSocket phase
+                        // events can be tracked (planning runs in background)
                         this.missionControl.planningProjectId = project.id;
 
-                        // Auto-select the new project
-                        this.selectProject(project);
-                        this.showToast('Project plan ready for review!', 'success');
+                        // Auto-select the project (shows planning status)
+                        this.missionControl.selectedProject = project;
+                        this.missionControl.projectTasks = [];
+                        this.missionControl.projectPrd = null;
+                        this.missionControl.projectProgress = null;
+
+                        this.showToast('Planning started...', 'info');
+                        // Planning completion will be handled by handleDWEvent
+                        // when dw_planning_complete arrives via WebSocket
                     } else {
                         const err = await res.json();
                         this.showToast(err.detail || 'Failed to start project', 'error');
+                        this.missionControl.projectStarting = false;
+                        this.missionControl.planningPhase = '';
+                        this.missionControl.planningMessage = '';
+                        this.missionControl.planningProjectId = null;
                     }
                 } catch (e) {
                     console.error('Failed to start Deep Work:', e);
                     this.showToast('Failed to start project', 'error');
-                } finally {
                     this.missionControl.projectStarting = false;
                     this.missionControl.planningPhase = '';
                     this.missionControl.planningMessage = '';
@@ -1257,7 +1273,9 @@ window.PocketPaw.MissionControl = {
                         }
                         this.showToast('Project approved! Execution started.', 'success');
 
-                        // Reload tasks (they should now be dispatched)
+                        // Brief delay to let background tasks start, then reload
+                        // (mc_task_started WebSocket events will also update in real-time)
+                        await new Promise(r => setTimeout(r, 500));
                         await this.selectProject(data.project);
                     } else {
                         const err = await res.json();
@@ -1614,7 +1632,7 @@ window.PocketPaw.MissionControl = {
                 if (eventType === 'dw_planning_phase') {
                     const projectId = eventData.project_id;
                     const phase = eventData.phase;
-                    const message = eventData.message;
+                    const message = eventData.message || `Phase: ${phase}`;
 
                     // Update planning progress
                     if (this.missionControl.planningProjectId === projectId) {
@@ -1623,6 +1641,54 @@ window.PocketPaw.MissionControl = {
                     }
 
                     this.log(`[Deep Work] ${message}`, 'info');
+
+                } else if (eventType === 'dw_planning_complete') {
+                    const projectId = eventData.project_id;
+                    const status = eventData.status;
+                    const title = eventData.title;
+                    const error = eventData.error;
+
+                    // Stop planning spinner
+                    if (this.missionControl.planningProjectId === projectId) {
+                        this.missionControl.projectStarting = false;
+                        this.missionControl.planningPhase = '';
+                        this.missionControl.planningMessage = '';
+                        this.missionControl.planningProjectId = null;
+                    }
+
+                    // Update project in list
+                    const idx = this.missionControl.projects.findIndex(p => p.id === projectId);
+                    if (idx >= 0) {
+                        this.missionControl.projects[idx].status = status;
+                        if (title) this.missionControl.projects[idx].title = title;
+                    }
+
+                    if (status === 'awaiting_approval') {
+                        this.showToast('Project plan ready for review!', 'success');
+
+                        // Reload agents list — planning creates new agents
+                        fetch('/api/mission-control/agents')
+                            .then(r => r.ok ? r.json() : null)
+                            .then(agentData => {
+                                if (agentData) {
+                                    this.missionControl.agents = agentData.agents || [];
+                                }
+                            })
+                            .catch(() => {});
+
+                        // Load the full plan if this project is selected
+                        if (this.missionControl.selectedProject?.id === projectId) {
+                            this.selectProject({ id: projectId });
+                        }
+                    } else if (status === 'failed') {
+                        this.showToast(`Planning failed: ${error || 'Unknown error'}`, 'error');
+                        if (this.missionControl.selectedProject?.id === projectId) {
+                            this.missionControl.selectedProject.status = 'failed';
+                        }
+                    }
+
+                    this.log(`[Deep Work] Planning ${status}: ${title || projectId}`, status === 'failed' ? 'error' : 'success');
+                    this.$nextTick(() => { if (window.refreshIcons) window.refreshIcons(); });
                 }
             }
         };

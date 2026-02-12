@@ -124,7 +124,8 @@ window.PocketPaw.ProjectBrowser = {
                     };
                 } else {
                     // First expand — init tree and load root
-                    const rootPath = '.pocketclaw/projects/' + id;
+                    // Use folder_path from API (e.g. ~/pocketpaw-projects/<id>)
+                    const rootPath = project.folder_path || ('pocketpaw-projects/' + id);
                     this.projectFileTrees = {
                         ...trees,
                         [id]: {
