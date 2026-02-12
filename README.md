@@ -5,7 +5,7 @@
 <h1 align="center">PocketPaw</h1>
 
 <p align="center">
-  <strong>Your AI agent that lives on YOUR Computer, Mobile, works on your goals autonomously.</strong>
+  <strong>Your AI agent. Modular. Secure. Everywhere.</strong>
 </p>
 
 <p align="center">
@@ -61,36 +61,39 @@ uv run pocketpaw
 PocketPaw will open the web dashboard in your browser and be ready to go.
 No Docker. No config files. No YAML. No dependency hell.
 
+**Talk to your agent from anywhere:**
+Telegram · Discord · Slack · WhatsApp · Web Dashboard
+
 ---
 
 ## What Can PocketPaw Do?
 
-| Feature | Description |
-|---------|-------------|
-| **Web Dashboard** | Browser-based control panel — the default mode, no setup needed |
-| **Multi-Channel** | Discord, Slack, WhatsApp (Personal + Business), Signal, Matrix, Teams, Google Chat, Telegram |
-| **Claude Agent SDK** | Default backend — official Claude SDK with built-in tools (Bash, Read, Write) |
-| **Smart Model Router** | Auto-selects Haiku / Sonnet / Opus based on task complexity |
-| **Tool Policy** | Fine-grained allow/deny control over which tools the agent can use |
-| **Plan Mode** | Require approval before the agent runs shell commands or edits files |
-| **Browser Control** | Browse the web, fill forms, click buttons via accessibility tree |
-| **Gmail Integration** | Search, read, and send emails via OAuth (no app passwords) |
-| **Calendar Integration** | List events, create meetings, meeting prep briefings |
-| **Google Drive & Docs** | List, download, upload, share files; read and create documents |
-| **Web Search & Research** | Tavily/Brave search + multi-step research with source synthesis |
-| **Image Generation** | Google Gemini image generation, saved locally |
-| **Voice / TTS / STT** | Text-to-speech via OpenAI or ElevenLabs, speech-to-text via Whisper |
-| **Spotify** | Search tracks, playback control, playlist management |
-| **Reddit** | Search posts, read threads, browse trending topics |
-| **OCR** | Extract text from images via GPT-4o vision or pytesseract |
-| **Memory & Compaction** | Long-term facts + session history with smart compaction + Mem0 semantic search |
-| **MCP Support** | Connect Model Context Protocol servers (stdio + HTTP) |
-| **Cron Scheduler** | Recurring reminders with natural language time parsing |
-| **Security Suite** | Injection scanner, audit CLI, Guardian AI, self-audit daemon |
-| **Local-First** | Runs on YOUR machine — your data never leaves your computer |
-| **Cross-Platform** | macOS, Windows, Linux |
-| **Skill System** | Create reusable agent skills at runtime |
-| **Task Delegation** | Delegate complex sub-tasks to Claude Code CLI |
+| Feature                   | Description                                                                                  |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| **Web Dashboard**         | Browser-based control panel — the default mode, no setup needed                              |
+| **Multi-Channel**         | Discord, Slack, WhatsApp (Personal + Business), Signal, Matrix, Teams, Google Chat, Telegram |
+| **Claude Agent SDK**      | Default backend — official Claude SDK with built-in tools (Bash, Read, Write)                |
+| **Smart Model Router**    | Auto-selects Haiku / Sonnet / Opus based on task complexity                                  |
+| **Tool Policy**           | Fine-grained allow/deny control over which tools the agent can use                           |
+| **Plan Mode**             | Require approval before the agent runs shell commands or edits files                         |
+| **Browser Control**       | Browse the web, fill forms, click buttons via accessibility tree                             |
+| **Gmail Integration**     | Search, read, and send emails via OAuth (no app passwords)                                   |
+| **Calendar Integration**  | List events, create meetings, meeting prep briefings                                         |
+| **Google Drive & Docs**   | List, download, upload, share files; read and create documents                               |
+| **Web Search & Research** | Tavily/Brave search + multi-step research with source synthesis                              |
+| **Image Generation**      | Google Gemini image generation, saved locally                                                |
+| **Voice / TTS / STT**     | Text-to-speech via OpenAI or ElevenLabs, speech-to-text via Whisper                          |
+| **Spotify**               | Search tracks, playback control, playlist management                                         |
+| **Reddit**                | Search posts, read threads, browse trending topics                                           |
+| **OCR**                   | Extract text from images via GPT-4o vision or pytesseract                                    |
+| **Memory & Compaction**   | Long-term facts + session history with smart compaction + Mem0 semantic search               |
+| **MCP Support**           | Connect Model Context Protocol servers (stdio + HTTP)                                        |
+| **Cron Scheduler**        | Recurring reminders with natural language time parsing                                       |
+| **Security Suite**        | Injection scanner, audit CLI, Guardian AI, self-audit daemon                                 |
+| **Local-First**           | Runs on YOUR machine — your data never leaves your computer                                  |
+| **Cross-Platform**        | macOS, Windows, Linux                                                                        |
+| **Skill System**          | Create reusable agent skills at runtime                                                      |
+| **Task Delegation**       | Delegate complex sub-tasks to Claude Code CLI                                                |
 
 ### Examples
 
@@ -137,6 +140,7 @@ Paw:  "3 agents working on it. Agent A is scraping competitor sites,
 The browser-based dashboard is the default mode — just run `pocketpaw` and it opens at `http://localhost:8888`.
 
 **What you get:**
+
 - Real-time streaming chat via WebSocket
 - Session management — create, switch, search, and resume conversations
 - Activity panel showing tool calls, thinking, and system events
@@ -148,6 +152,7 @@ The browser-based dashboard is the default mode — just run `pocketpaw` and it 
 ### Channel Management
 
 All configured channel adapters auto-start on launch. Use the sidebar "Channels" button to:
+
 - Configure tokens and credentials per channel
 - Start/stop adapters dynamically
 - See running status at a glance
@@ -258,13 +263,16 @@ Switch anytime in settings or config!
 ## Memory System
 
 ### File-based Memory (Default)
+
 Stores memories as readable markdown in `~/.pocketclaw/memory/`:
+
 - `MEMORY.md` — Long-term facts about you
 - `sessions/` — Conversation history with smart compaction
 
 ### Session Compaction
 
 Long conversations are automatically compacted to stay within budget:
+
 - **Recent messages** kept verbatim (configurable window)
 - **Older messages** compressed to one-liner extracts (Tier 1) or LLM summaries (Tier 2, opt-in)
 
@@ -273,6 +281,7 @@ Long conversations are automatically compacted to stay within budget:
 PocketPaw creates identity files at `~/.pocketclaw/identity/` including `USER.md` — a profile loaded into every conversation so the agent knows your preferences.
 
 ### Optional: Mem0 (Semantic Memory)
+
 For smarter memory with vector search and automatic fact extraction:
 
 ```bash
@@ -285,7 +294,7 @@ See [Memory documentation](documentation/features/memory.md) for details.
 
 ## Configuration
 
-Config lives in `~/.pocketclaw/config.json`:
+Config lives in `~/.pocketclaw/config.json`. API keys and tokens are **automatically encrypted** in `secrets.enc` — never stored as plain text.
 
 ```json
 {
@@ -400,6 +409,9 @@ Full documentation lives in [`documentation/`](documentation/README.md):
 ---
 
 ## Join the Pack
+
+<!-- TODO: Add Product Hunt badge once page is live -->
+<!-- [![Product Hunt](https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=XXXXX)](https://www.producthunt.com/posts/pocketpaw) -->
 
 - Twitter: [@PocketPawAI](https://twitter.com/PocketPaw89242)
 - Discord: Coming Soon
